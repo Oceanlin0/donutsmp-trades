@@ -138,6 +138,24 @@ input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border-radius
 dialog { border: 2px solid var(--line); border-radius: 24px; background: var(--surface); color: var(--fg); padding: 24px; width: min(420px, calc(100% - 32px)); }
 dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
 
+.cartbar { position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 20; max-width: 560px; margin-inline: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--fg); color: var(--bg); border-radius: 999px; padding: 10px 10px 10px 22px; font-weight: 700; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3); }
+.cartbar[hidden] { display: none; }
+.cartbtn { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+body.has-cart footer { padding-bottom: 110px; }
+.cartbox { display: flex; flex-direction: column; gap: 14px; }
+.cartbox h3 { font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; }
+#cartLines { display: flex; flex-direction: column; gap: 10px; max-height: 40vh; overflow-y: auto; }
+.line { display: flex; align-items: center; gap: 10px; border-bottom: 2px solid var(--line); padding-bottom: 10px; }
+.linfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.qtyrow { display: flex; align-items: center; gap: 8px; }
+.qty-n { font-family: var(--font-mono); font-weight: 700; min-width: 2ch; text-align: center; }
+.lprice { font-family: var(--font-mono); font-weight: 700; font-variant-numeric: tabular-nums; }
+.step { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--line); background: var(--bg); color: var(--fg); font: 700 1.1rem/1 var(--font-body); cursor: pointer; }
+.mini { width: 110px; font: 500 1rem var(--font-mono); color: var(--fg); background: var(--bg); border: 2px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+.field input[type="number"] { font: 500 1rem var(--font-mono); color: var(--fg); background: var(--bg); border: 2px solid var(--line); border-radius: 14px; padding: 12px 14px; width: 100%; }
+.totalrow { display: flex; justify-content: space-between; align-items: baseline; font-size: 1.1rem; }
+.totalrow strong { font-family: var(--font-mono); color: var(--accent); font-size: 1.4rem; }
+
 /* Sections */
 section { padding-block: 48px; }
 .section-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px; max-width: 60ch; }
@@ -218,7 +236,7 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
       <div>
         <p class="eyebrow">DonutSMP money and items</p>
         <h1>Skip the grind. <em>Buy money</em> and gear for DonutSMP.</h1>
-        <p class="lede">Pick an amount, pay at Whop checkout, then meet us in-game to pick it up.</p>
+        <p class="lede">Pick an amount or items, check out on Whop, then meet us in-game to pick it up.</p>
         <div class="cta-row">
           <a class="btn btn-primary" href="#calc">Buy money</a>
           <a class="btn btn-ghost" href="#packs">See packs</a>
@@ -241,20 +259,15 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
           <div class="price" id="price">$5.00</div>
         </div>
         <div>
-          <input type="range" id="slider" aria-label="Amount of in-game money in millions" min="20" max="1000" step="1" value="100">
-          <div class="scale"><span>20M</span><span>500M</span><span>1B</span></div>
+          <input type="range" id="slider" aria-label="Amount of in-game money in millions" min="1" max="1000" step="1" value="100">
+          <div class="scale"><span>1M</span><span>500M</span><span>1B</span></div>
+        </div>
+        <div class="field">
+          <label for="mil">Or type an amount in millions</label>
+          <input type="number" id="mil" inputmode="numeric" min="1" max="2000" step="1" value="100">
         </div>
         <p class="hint" id="rate"></p>
-        <div class="field">
-          <label for="ign">Your Minecraft username</label>
-          <input type="text" id="ign" placeholder="YourUsername" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="16">
-        </div>
-        <div class="note">
-          <p id="summary"></p>
-          <button class="btn btn-ghost btn-small" id="copy" type="button">Copy note</button>
-        </div>
-        <button class="btn btn-primary" id="checkout" type="button">Checkout</button>
-        <p class="err" id="err" role="alert" hidden></p>
+        <button class="btn btn-primary" id="addMoney" type="button">Add to cart</button>
       </div>
     </div>
 
@@ -271,7 +284,7 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
       <div class="section-head">
         <p class="eyebrow">Item shop</p>
         <h2>Gear, spawners and supplies.</h2>
-        <p>Pick what you need and check out on Whop. Prices are per listing.</p>
+        <p>Add what you need to your cart and check out once.</p>
       </div>
       <div class="chips" id="chips" role="group" aria-label="Filter items by category"></div>
       <div class="items" id="itemGrid"></div>
@@ -289,9 +302,9 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
         <h2>Four steps from checkout to your inventory.</h2>
       </div>
       <ol class="steps">
-        <li><strong>Pick an amount</strong><span>Use the slider or choose a pack.</span></li>
-        <li><strong>Pay on Whop</strong><span>Checkout and payment run on Whop.</span></li>
-        <li><strong>Send your username</strong><span>So we know exactly who to deliver to.</span></li>
+        <li><strong>Pick an amount</strong><span>Type an amount or add items to your cart.</span></li>
+        <li><strong>Pay on Whop</strong><span>You pay the exact total at Whop checkout.</span></li>
+        <li><strong>Enter your username</strong><span>We deliver to the name you type in the cart.</span></li>
         <li><strong>Meet in-game</strong><span>We trade it to you on DonutSMP.</span></li>
       </ol>
     </section>
@@ -304,11 +317,11 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
       <div class="faq">
         <details>
           <summary>How do I pay?</summary>
-          <p>Press any Buy on Whop button. Checkout and payment are handled by Whop.</p>
+          <p>Add things to your cart, open it, enter your username and tap Checkout. Payment is handled by Whop.</p>
         </details>
         <details>
           <summary>How does delivery work?</summary>
-          <p>After you pay, send your Minecraft username. We meet you in-game on DonutSMP and trade it to you.</p>
+          <p>After you pay, we meet you in-game on DonutSMP and trade it to the username you entered.</p>
         </details>
         <details>
           <summary>What if something goes wrong with my order?</summary>
@@ -328,20 +341,27 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
   </footer>
 </div>
 
-<dialog id="orderDialog">
-  <form id="orderForm" method="dialog" style="display:flex;flex-direction:column;gap:14px">
-    <h3 id="orderTitle" style="font-family:var(--font-display);font-weight:400;font-size:1.5rem"></h3>
-    <p class="hint" id="orderSub"></p>
+<div class="cartbar" id="cartBar" hidden>
+  <span id="cartBarText"></span>
+  <button class="btn btn-small cartbtn" id="cartOpen" type="button">View cart</button>
+</div>
+
+<dialog id="cartDialog">
+  <div class="cartbox">
+    <h3>Your cart</h3>
+    <div id="cartLines"></div>
+    <div class="totalrow"><span>Total</span><strong id="cartTotal">$0.00</strong></div>
+    <p class="err" id="cartMin" hidden></p>
     <div class="field">
-      <label for="orderIgn">Your Minecraft username</label>
-      <input type="text" id="orderIgn" placeholder="YourUsername" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="16">
+      <label for="cartIgn">Your Minecraft username</label>
+      <input type="text" id="cartIgn" placeholder="YourUsername" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="16">
     </div>
-    <p class="err" id="orderErr" role="alert" hidden></p>
+    <p class="err" id="cartErr" role="alert" hidden></p>
     <div class="cta-row" style="margin-top:0">
-      <button class="btn btn-primary" id="orderGo" type="button">Continue to payment</button>
-      <button class="btn btn-ghost" id="orderCancel" type="button">Cancel</button>
+      <button class="btn btn-primary" id="cartGo" type="button">Checkout</button>
+      <button class="btn btn-ghost" id="cartClose" type="button">Keep shopping</button>
     </div>
-  </form>
+  </div>
 </dialog>
 
 <script>
@@ -414,7 +434,7 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
       '<span class="qty">' + fmtAmount(p.m) + '</span>' +
       '<span class="cost">' + fmtPrice(p.m * r) + '</span>' +
       '<span class="per">' + fmtPrice(r) + ' per 1M</span>' +
-      '<button type="button" class="btn btn-primary" data-pack="' + p.m + '">Buy ' + p.name + '</button>';
+      '<button type="button" class="btn btn-primary" data-pack="' + p.m + '">Add ' + p.name + ' to cart</button>';
     grid.appendChild(el);
   });
 
@@ -435,7 +455,7 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
         '<span class="iname">' + it.name + '</span>' +
         '<span class="idesc">' + it.desc + '</span>' +
         '<span class="iprice">' + fmtPrice(it.price) + '</span>' +
-        '<button type="button" class="btn btn-ghost btn-small" data-item="' + idx + '">Buy</button>';
+        '<button type="button" class="btn btn-ghost btn-small" data-item="' + idx + '">Add to cart</button>';
       itemGrid.appendChild(el);
     });
   }
@@ -457,102 +477,140 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
 
   // Calculator
   var slider = document.getElementById("slider");
+  var mil = document.getElementById("mil");
   var amountEl = document.getElementById("amount");
   var priceEl = document.getElementById("price");
   var rateEl = document.getElementById("rate");
-  var ign = document.getElementById("ign");
-  var summary = document.getElementById("summary");
-  var copyBtn = document.getElementById("copy");
+  var addBtn = document.getElementById("addMoney");
+  var RATE = CONFIG.tiers[0].rate, MAX_M = 2000, MAX_QTY = 20;
 
-  function update() {
-    var m = Number(slider.value);
-    var r = rateFor(m);
-    var pct = ((m - slider.min) / (slider.max - slider.min)) * 100;
-    slider.style.setProperty("--p", pct + "%");
+  function clampM(v) { v = Math.floor(Number(v)); if (!isFinite(v) || v < 1) v = 1; return Math.min(v, MAX_M); }
+  function showMoney(m) {
+    var sv = Math.min(m, Number(slider.max));
+    slider.value = sv;
+    slider.style.setProperty("--p", (((sv - slider.min) / (slider.max - slider.min)) * 100) + "%");
     amountEl.textContent = fmtAmount(m);
-    priceEl.textContent = fmtPrice(m * r);
-    var nt = nextTier(m), txt = fmtPrice(r) + " per 1M.";
-    if (nt) txt += " Drops to " + fmtPrice(nt.rate) + " at " + fmtAmount(nt.from) + ".";
-    else txt += " Same rate at any amount.";
-    rateEl.textContent = txt;
-    var name = ign.value.trim() || "YourUsername";
-    summary.textContent = "Order: " + fmtAmount(m) + " DonutSMP money for " + name + " (" + fmtPrice(m * r) + ")";
+    priceEl.textContent = fmtPrice(m * RATE);
+    rateEl.textContent = fmtPrice(RATE) + " per 1M. Minimum order is $1.00 (20M) across your whole cart.";
   }
-  slider.addEventListener("input", update);
-  ign.addEventListener("input", update);
+  slider.addEventListener("input", function () { mil.value = slider.value; showMoney(Number(slider.value)); });
+  mil.addEventListener("input", function () { if (mil.value === "") return; var m = clampM(mil.value); showMoney(m); });
+  mil.addEventListener("blur", function () { var m = clampM(mil.value); mil.value = m; showMoney(m); });
 
-  copyBtn.addEventListener("click", function () {
-    var text = summary.textContent;
-    function flash(msg) { copyBtn.textContent = msg; setTimeout(function () { copyBtn.textContent = "Copy note"; }, 1600); }
-    function fallback() {
-      try {
-        var range = document.createRange();
-        range.selectNodeContents(summary);
-        var sel = window.getSelection();
-        sel.removeAllRanges(); sel.addRange(range);
-        flash("Selected");
-      } catch (e) { flash("Select it"); }
+  // Cart
+  var cart = { money: 0, items: {} };
+  try {
+    var saved = JSON.parse(localStorage.getItem("donutsmp-cart") || "null");
+    if (saved && typeof saved.money === "number" && saved.items && typeof saved.items === "object") {
+      cart.money = Math.min(Math.max(0, Math.floor(saved.money)), MAX_M);
+      Object.keys(saved.items).forEach(function (n) {
+        var q = Math.floor(Number(saved.items[n]));
+        if (CONFIG.items.some(function (i) { return i.name === n; }) && q > 0) cart.items[n] = Math.min(q, MAX_QTY);
+      });
     }
-    try {
-      navigator.clipboard.writeText(text).then(function () { flash("Copied"); }, fallback);
-    } catch (e) { fallback(); }
+  } catch (e) {}
+  function saveCart() { try { localStorage.setItem("donutsmp-cart", JSON.stringify(cart)); } catch (e) {} }
+  function itemByName(n) { return CONFIG.items.filter(function (i) { return i.name === n; })[0]; }
+  function cartCents() {
+    var c = Math.round(cart.money * RATE * 100);
+    Object.keys(cart.items).forEach(function (n) { c += Math.round(itemByName(n).price * 100) * cart.items[n]; });
+    return c;
+  }
+  function cartCount() { var n = cart.money ? 1 : 0; Object.keys(cart.items).forEach(function (k) { n += cart.items[k]; }); return n; }
+
+  var bar = document.getElementById("cartBar");
+  var barText = document.getElementById("cartBarText");
+  var dlg = document.getElementById("cartDialog");
+  var linesEl = document.getElementById("cartLines");
+  var totalEl = document.getElementById("cartTotal");
+  var minEl = document.getElementById("cartMin");
+  var cIgn = document.getElementById("cartIgn");
+  var cErr = document.getElementById("cartErr");
+  var goBtn = document.getElementById("cartGo");
+
+  function mk(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function stepBtn(label, aria, fn) { var b = mk("button", "step", label); b.type = "button"; b.setAttribute("aria-label", aria); b.addEventListener("click", fn); return b; }
+
+  function renderCart() {
+    var cents = cartCents(), count = cartCount();
+    document.body.classList.toggle("has-cart", count > 0);
+    bar.hidden = count === 0;
+    barText.textContent = "Cart · " + count + (count === 1 ? " line" : " lines") + " · " + fmtPrice(cents / 100);
+    linesEl.innerHTML = "";
+    if (cart.money) {
+      var row = mk("div", "line");
+      var info = mk("div", "linfo"); info.appendChild(mk("strong", null, "DonutSMP money"));
+      var mi = mk("input", "mini"); mi.type = "number"; mi.min = 1; mi.max = MAX_M; mi.value = cart.money; mi.id = "cartMoney"; mi.inputMode = "numeric";
+      mi.setAttribute("aria-label", "Millions of money");
+      mi.addEventListener("change", function () { cart.money = clampM(mi.value); saveCart(); renderCart(); });
+      var wrap = mk("div", "qtyrow"); wrap.appendChild(mi); wrap.appendChild(mk("span", "hint", "million"));
+      info.appendChild(wrap); row.appendChild(info);
+      row.appendChild(mk("span", "lprice", fmtPrice(cart.money * RATE)));
+      var rm = stepBtn("×", "Remove money", function () { cart.money = 0; saveCart(); renderCart(); });
+      row.appendChild(rm); linesEl.appendChild(row);
+    }
+    Object.keys(cart.items).forEach(function (n) {
+      var it = itemByName(n), q = cart.items[n];
+      var row = mk("div", "line");
+      var info = mk("div", "linfo"); info.appendChild(mk("strong", null, n));
+      var qr = mk("div", "qtyrow");
+      qr.appendChild(stepBtn("−", "Fewer " + n, function () { if (q > 1) cart.items[n] = q - 1; else delete cart.items[n]; saveCart(); renderCart(); }));
+      qr.appendChild(mk("span", "qty-n", String(q)));
+      qr.appendChild(stepBtn("+", "More " + n, function () { cart.items[n] = Math.min(q + 1, MAX_QTY); saveCart(); renderCart(); }));
+      info.appendChild(qr); row.appendChild(info);
+      row.appendChild(mk("span", "lprice", fmtPrice(it.price * q)));
+      row.appendChild(stepBtn("×", "Remove " + n, function () { delete cart.items[n]; saveCart(); renderCart(); }));
+      linesEl.appendChild(row);
+    });
+    if (!count) linesEl.appendChild(mk("p", "hint", "Your cart is empty."));
+    totalEl.textContent = fmtPrice(cents / 100);
+    var short = 100 - cents;
+    minEl.textContent = count && short > 0 ? "Minimum order is $1.00. Add " + fmtPrice(short / 100) + " more." : "";
+    minEl.hidden = !minEl.textContent;
+    goBtn.disabled = !count || short > 0;
+  }
+
+  function flash(btn, msg) {
+    var old = btn.dataset.label || btn.textContent; btn.dataset.label = old;
+    btn.textContent = msg; setTimeout(function () { btn.textContent = old; }, 1200);
+  }
+  function addMoney(m) { cart.money = Math.min(cart.money + m, MAX_M); saveCart(); renderCart(); }
+  function addItem(n) { cart.items[n] = Math.min((cart.items[n] || 0) + 1, MAX_QTY); saveCart(); renderCart(); }
+
+  addBtn.addEventListener("click", function () { addMoney(clampM(mil.value)); flash(addBtn, "Added"); });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-pack],[data-item]");
+    if (!b) return;
+    if (b.hasAttribute("data-pack")) addMoney(Number(b.getAttribute("data-pack")));
+    else addItem(CONFIG.items[Number(b.getAttribute("data-item"))].name);
+    flash(b, "Added");
   });
 
-  // Checkout: the server creates a Whop checkout for the exact total.
-  var errEl = document.getElementById("err");
-  var checkoutBtn = document.getElementById("checkout");
-  var dlg = document.getElementById("orderDialog");
-  var dIgn = document.getElementById("orderIgn");
-  var dErr = document.getElementById("orderErr");
-  var dGo = document.getElementById("orderGo");
-  var pending = null;
+  function openCart() { cErr.hidden = true; renderCart(); if (dlg.showModal) { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute("open", ""); }
+  function closeCart() { if (dlg.close) dlg.close(); else dlg.removeAttribute("open"); }
+  document.getElementById("cartOpen").addEventListener("click", openCart);
+  document.getElementById("cartClose").addEventListener("click", closeCart);
+  function showErr(t) { cErr.textContent = t; cErr.hidden = !t; }
 
-  function startCheckout(payload, btn, showErr) {
+  goBtn.addEventListener("click", function () {
     showErr("");
-    var label = btn.textContent;
-    btn.disabled = true; btn.textContent = "Opening checkout...";
+    var items = Object.keys(cart.items).map(function (n) { return { name: n, qty: cart.items[n] }; });
+    var label = goBtn.textContent;
+    goBtn.disabled = true; goBtn.textContent = "Opening checkout...";
     fetch(CONFIG.apiBase + "/api/checkout", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ign: cIgn.value.trim(), money: cart.money, items: items })
     }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (x) {
         if (x.ok && x.j.url) { window.location.assign(x.j.url); return; }
         showErr(x.j.error || "Could not start checkout.");
-        btn.disabled = false; btn.textContent = label;
+        goBtn.disabled = false; goBtn.textContent = label;
       })
-      .catch(function () { showErr("Could not reach the checkout. Check your connection and try again."); btn.disabled = false; btn.textContent = label; });
-  }
-  function showCalcErr(t) { errEl.textContent = t; errEl.hidden = !t; }
-  function showDlgErr(t) { dErr.textContent = t; dErr.hidden = !t; }
-
-  checkoutBtn.addEventListener("click", function () {
-    startCheckout({ type: "money", millions: Number(slider.value), ign: ign.value.trim() }, checkoutBtn, showCalcErr);
-  });
-  function openDialog(title, sub, payload) {
-    pending = payload;
-    document.getElementById("orderTitle").textContent = title;
-    document.getElementById("orderSub").textContent = sub;
-    showDlgErr(""); dIgn.value = ign.value;
-    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
-    dIgn.focus();
-  }
-  document.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-pack],[data-item]");
-    if (!b) return;
-    if (b.hasAttribute("data-pack")) {
-      var m = Number(b.getAttribute("data-pack"));
-      openDialog(fmtAmount(m) + " money", fmtPrice(m * rateFor(m)) + " total", { type: "money", millions: m });
-    } else {
-      var it = CONFIG.items[Number(b.getAttribute("data-item"))];
-      openDialog(it.name, fmtPrice(it.price) + " total", { type: "item", name: it.name });
-    }
-  });
-  document.getElementById("orderCancel").addEventListener("click", function () { dlg.close ? dlg.close() : dlg.removeAttribute("open"); });
-  dGo.addEventListener("click", function () {
-    var payload = Object.assign({}, pending, { ign: dIgn.value.trim() });
-    startCheckout(payload, dGo, showDlgErr);
+      .catch(function () { showErr("Could not reach the checkout. Check your connection and try again."); goBtn.disabled = false; goBtn.textContent = label; });
   });
 
-  update();
+  showMoney(100);
+  renderCart();
 })();
 </script>
 

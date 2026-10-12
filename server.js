@@ -10,7 +10,8 @@ const WHOP_API_BASE = process.env.WHOP_API_BASE || "https://api.whop.com";
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "https://oceanlin0.github.io";
 
 const CENTS_PER_MILLION = 5;   // $0.05 per 1M
-const MIN_MILLIONS = 20;       // $1.00 minimum order
+const MIN_CENTS = 100;         // $1.00 minimum order (Whop minimum)
+const MAX_CENTS = 30000;       // $300.00 maximum order
 const MAX_MILLIONS = 2000;     // $100.00 maximum order
 
 // Keep names and prices in sync with the items list in index.html.
@@ -90,14 +91,26 @@ async function handleCheckout(req, res) {
   try { p = JSON.parse(await readBody(req)); } catch (e) { return send(res, 400, { error: "Bad request." }, h); }
   const ign = String(p.ign || "").trim();
   if (!/^[A-Za-z0-9_]{3,16}$/.test(ign)) return send(res, 400, { error: "Enter your Minecraft username (3 to 16 letters, numbers or underscores)." }, h);
-  let cents, title, meta;
-  if (p.type === "money") {
-    const m = Number(p.millions);
-    if (!Number.isInteger(m) || m < MIN_MILLIONS || m > MAX_MILLIONS) return send(res, 400, { error: "Choose between " + MIN_MILLIONS + "M and " + MAX_MILLIONS + "M." }, h);
-    cents = m * CENTS_PER_MILLION; title = m + "M money for " + ign; meta = { type: "money", millions: String(m), ign: ign };
-  } else if (p.type === "item" && Object.prototype.hasOwnProperty.call(ITEMS, p.name)) {
-    cents = ITEMS[p.name]; title = p.name + " for " + ign; meta = { type: "item", item: p.name, ign: ign };
-  } else return send(res, 400, { error: "Unknown order." }, h);
+  const money = p.money === undefined ? 0 : Number(p.money);
+  if (!Number.isInteger(money) || money < 0 || money > MAX_MILLIONS) return send(res, 400, { error: "Money must be between 1M and " + MAX_MILLIONS + "M." }, h);
+  const lines = Array.isArray(p.items) ? p.items : [];
+  if (lines.length > 20) return send(res, 400, { error: "Too many items in the cart." }, h);
+  let cents = money * CENTS_PER_MILLION;
+  const parts = [];
+  if (money) parts.push(money + "M money");
+  const seen = new Set();
+  for (const l of lines) {
+    const q = Number(l && l.qty);
+    if (!l || !Object.prototype.hasOwnProperty.call(ITEMS, l.name) || seen.has(l.name) || !Number.isInteger(q) || q < 1 || q > 20) return send(res, 400, { error: "Unknown order." }, h);
+    seen.add(l.name);
+    cents += ITEMS[l.name] * q;
+    parts.push(q + " x " + l.name);
+  }
+  if (!parts.length) return send(res, 400, { error: "Your cart is empty." }, h);
+  if (cents < MIN_CENTS) return send(res, 400, { error: "Minimum order is $1.00." }, h);
+  if (cents > MAX_CENTS) return send(res, 400, { error: "That order is too large. Split it into smaller orders." }, h);
+  const title = parts.join(", ") + " for " + ign;
+  const meta = { ign: ign, order: parts.join(", ").slice(0, 450), total: (cents / 100).toFixed(2) };
   try { send(res, 200, { url: await whopCheckout(cents, title, meta) }, h); }
   catch (e) { send(res, 502, { error: "Could not start checkout. Try again in a moment." }, h); }
 }
