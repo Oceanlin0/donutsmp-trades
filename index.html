@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>DonutSMP Trades</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a market-stall price board. Hero pairs the pitch with a live price calculator; packs, steps and FAQ stack below. */
+:root {
+  --bg: #fff5f9;
+  --surface: #ffffff;
+  --fg: #2b1220;
+  --muted: #7a5a6c;
+  --line: #f0d3e1;
+  --accent: #e3317c;
+  --accent-fg: #ffffff;
+  --mint: #0e8f7c;
+  --dough: #f4b63f;
+  --font-display: "Bagel Fat One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b0e16;
+    --surface: #26141f;
+    --fg: #fceaf2;
+    --muted: #c39cb1;
+    --line: #3e2434;
+    --accent: #ff5b9e;
+    --accent-fg: #2b0a18;
+    --mint: #4fd3bc;
+    --dough: #f7c766;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b0e16;
+  --surface: #26141f;
+  --fg: #fceaf2;
+  --muted: #c39cb1;
+  --line: #3e2434;
+  --accent: #ff5b9e;
+  --accent-fg: #2b0a18;
+  --mint: #4fd3bc;
+  --dough: #f7c766;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  padding-inline: 16px;
+  padding-block: 0;
+}
+* { box-sizing: border-box; }
+.wrap { width: min(1080px, 100%); margin-inline: auto; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mint);
+}
+
+/* Top bar */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 18px; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 1.35rem; text-decoration: none; }
+.brand svg { width: 34px; height: 34px; flex: none; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font: 700 1rem/1 var(--font-body);
+  padding: 14px 22px;
+  border-radius: 999px;
+  border: 2px solid var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn-primary { background: var(--accent); color: var(--accent-fg); }
+.btn-ghost { background: transparent; color: var(--fg); border-color: var(--line); }
+.btn-small { padding: 10px 16px; font-size: 0.9rem; }
+
+/* Hero */
+.hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: start; padding-block: 28px 56px; }
+.hero > * { min-width: 0; }
+.hero h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(2.3rem, 6vw, 4rem); line-height: 1.02; margin-block: 12px 16px; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .lede { font-size: 1.125rem; color: var(--muted); max-width: 46ch; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.donut { width: 190px; max-width: 100%; margin-top: 36px; }
+.donut svg { width: 100%; height: auto; display: block; }
+.donut .spin { transform-origin: 100px 100px; animation: spin 48s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .donut .spin { animation: none; } .btn { transition: none; } }
+
+/* Calculator */
+.calc { background: var(--surface); border: 2px solid var(--line); border-radius: 28px; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+.calc h2 { font-size: 1rem; font-family: var(--font-body); font-weight: 700; }
+.readout { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.amount { font-family: var(--font-display); font-size: clamp(2.6rem, 8vw, 3.6rem); line-height: 1; }
+.price { font-family: var(--font-mono); font-weight: 700; font-size: 1.6rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+.hint { font-size: 0.875rem; color: var(--muted); }
+.scale { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 30px; background: transparent; margin: 0; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { height: 10px; border-radius: 999px; background: linear-gradient(to right, var(--accent) var(--p, 0%), var(--line) var(--p, 0%)); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; margin-top: -9px; border-radius: 50%; background: var(--surface); border: 4px solid var(--accent); }
+input[type="range"]::-moz-range-track { height: 10px; border-radius: 999px; background: linear-gradient(to right, var(--accent) var(--p, 0%), var(--line) var(--p, 0%)); }
+input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--surface); border: 4px solid var(--accent); }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 0.875rem; font-weight: 700; }
+.field input[type="text"] {
+  font: 500 1rem var(--font-mono);
+  color: var(--fg); background: var(--bg);
+  border: 2px solid var(--line); border-radius: 14px; padding: 12px 14px; width: 100%;
+}
+.note { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; background: var(--bg); border: 2px dashed var(--line); border-radius: 14px; padding: 12px 14px; }
+.note p { font-family: var(--font-mono); font-size: 0.85rem; overflow-wrap: anywhere; min-width: 0; flex: 1 1 200px; }
+
+/* Sections */
+section { padding-block: 48px; }
+.section-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px; max-width: 60ch; }
+.section-head h2 { font-family: var(--font-display); font-weight: 400; font-size: clamp(1.8rem, 4.5vw, 2.6rem); line-height: 1.08; }
+.section-head p { color: var(--muted); }
+
+.packs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.pack { background: var(--surface); border: 2px solid var(--line); border-radius: 24px; padding: 22px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.pack .name { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.pack .qty { font-family: var(--font-display); font-size: 2.8rem; line-height: 1; }
+.pack .cost { font-family: var(--font-mono); font-weight: 700; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.pack .per { font-size: 0.85rem; color: var(--muted); }
+.pack .btn { margin-top: auto; }
+.pack.best { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.pack.best .name, .pack.best .per { color: var(--accent-fg); opacity: 0.85; }
+.pack.best .btn-primary { background: var(--accent-fg); color: var(--accent); border-color: var(--accent-fg); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.chip { font: 700 0.9rem/1 var(--font-body); padding: 11px 18px; border-radius: 999px; border: 2px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.items { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 14px; }
+.item { background: var(--surface); border: 2px solid var(--line); border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.item .tag { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mint); }
+.item .iname { font-weight: 700; font-size: 1.05rem; line-height: 1.25; }
+.item .idesc { color: var(--muted); font-size: 0.875rem; }
+.item .iprice { font-family: var(--font-mono); font-weight: 700; font-size: 1.25rem; color: var(--accent); margin-top: 8px; font-variant-numeric: tabular-nums; }
+.item .btn { margin-top: auto; }
+.item .iprice + .btn { margin-top: 12px; }
+.gear { margin-top: 28px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; background: var(--surface); border: 2px solid var(--line); border-radius: 24px; padding: 22px; }
+.gear > div { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.gear h3 { font-family: var(--font-display); font-weight: 400; font-size: 1.5rem; }
+.gear p { color: var(--muted); }
+
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; counter-reset: step; }
+.steps li { counter-increment: step; display: flex; flex-direction: column; gap: 6px; padding-top: 16px; border-top: 4px solid var(--dough); min-width: 0; }
+.steps li::before { content: "Step " counter(step); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.steps strong { font-size: 1.1rem; }
+.steps span { color: var(--muted); }
+
+.faq { display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
+.faq details { background: var(--surface); border: 2px solid var(--line); border-radius: 18px; padding: 4px 20px; }
+.faq summary { cursor: pointer; font-weight: 700; padding-block: 14px; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font-family: var(--font-mono); color: var(--accent); }
+.faq details[open] summary::after { content: "\2212"; }
+.faq details p { color: var(--muted); padding-bottom: 16px; }
+
+footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var(--muted); font-size: 0.875rem; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+
+@media (max-width: 860px) {
+  .hero { grid-template-columns: 1fr; gap: 28px; }
+  .donut { display: none; }
+  .packs { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .steps { grid-template-columns: 1fr; }
+  .calc { padding: 18px; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#top" aria-label="DonutSMP Trades home">
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <circle cx="100" cy="100" r="64" fill="none" stroke="var(--dough)" stroke-width="58"/>
+        <circle cx="100" cy="100" r="68" fill="none" stroke="var(--accent)" stroke-width="36"/>
+      </svg>
+      DonutSMP Trades
+    </a>
+    <a class="btn btn-primary btn-small" data-whop href="https://whop.com/" target="_blank" rel="noopener">Buy on Whop</a>
+  </header>
+
+  <main id="top">
+    <div class="hero">
+      <div>
+        <p class="eyebrow">DonutSMP money and items</p>
+        <h1>Skip the grind. <em>Buy money</em> and gear for DonutSMP.</h1>
+        <p class="lede">Pick an amount, pay at Whop checkout, then meet us in-game to pick it up.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" data-whop href="https://whop.com/" target="_blank" rel="noopener">Buy on Whop</a>
+          <a class="btn btn-ghost" href="#packs">See packs</a>
+        </div>
+        <div class="donut" aria-hidden="true">
+          <svg viewBox="0 0 200 200">
+            <g class="spin">
+              <circle cx="100" cy="100" r="62" fill="none" stroke="var(--dough)" stroke-width="64"/>
+              <circle cx="100" cy="100" r="66" fill="none" stroke="var(--accent)" stroke-width="42"/>
+              <g id="sprinkles" stroke-width="4" stroke-linecap="round"></g>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <div class="calc" id="calc">
+        <h2>How much money do you need?</h2>
+        <div class="readout">
+          <div class="amount" id="amount">100M</div>
+          <div class="price" id="price">$5.00</div>
+        </div>
+        <div>
+          <input type="range" id="slider" aria-label="Amount of in-game money in millions" min="10" max="1000" step="10" value="100">
+          <div class="scale"><span>10M</span><span>500M</span><span>1B</span></div>
+        </div>
+        <p class="hint" id="rate"></p>
+        <div class="field">
+          <label for="ign">Your Minecraft username</label>
+          <input type="text" id="ign" placeholder="YourUsername" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="16">
+        </div>
+        <div class="note">
+          <p id="summary"></p>
+          <button class="btn btn-ghost btn-small" id="copy" type="button">Copy note</button>
+        </div>
+        <a class="btn btn-primary" data-whop href="https://whop.com/" target="_blank" rel="noopener">Checkout on Whop</a>
+      </div>
+    </div>
+
+    <section id="packs">
+      <div class="section-head">
+        <p class="eyebrow">Money packs</p>
+        <h2>One flat rate: $0.05 per 1M.</h2>
+        <p>Every pack is delivered in-game after you pay.</p>
+      </div>
+      <div class="packs" id="packGrid"></div>
+    </section>
+
+    <section id="items">
+      <div class="section-head">
+        <p class="eyebrow">Item shop</p>
+        <h2>Gear, spawners and supplies.</h2>
+        <p>Pick what you need and check out on Whop. Prices are per listing.</p>
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="Filter items by category"></div>
+      <div class="items" id="itemGrid"></div>
+      <div class="gear">
+        <div>
+          <h3>Don't see it?</h3>
+          <p>Tell us what you need and we will give you a price for it.</p>
+        </div>
+        <a class="btn btn-ghost" data-whop href="https://whop.com/" target="_blank" rel="noopener">Ask on Whop</a>
+      </div>
+    </section>
+
+    <section id="how">
+      <div class="section-head">
+        <p class="eyebrow">How it works</p>
+        <h2>Four steps from checkout to your inventory.</h2>
+      </div>
+      <ol class="steps">
+        <li><strong>Pick an amount</strong><span>Use the slider or choose a pack.</span></li>
+        <li><strong>Pay on Whop</strong><span>Checkout and payment run on Whop.</span></li>
+        <li><strong>Send your username</strong><span>So we know exactly who to deliver to.</span></li>
+        <li><strong>Meet in-game</strong><span>We trade it to you on DonutSMP.</span></li>
+      </ol>
+    </section>
+
+    <section id="faq">
+      <div class="section-head">
+        <p class="eyebrow">Questions</p>
+        <h2>Before you buy.</h2>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>How do I pay?</summary>
+          <p>Press any Buy on Whop button. Checkout and payment are handled by Whop.</p>
+        </details>
+        <details>
+          <summary>How does delivery work?</summary>
+          <p>After you pay, send your Minecraft username. We meet you in-game on DonutSMP and trade it to you.</p>
+        </details>
+        <details>
+          <summary>What if something goes wrong with my order?</summary>
+          <p>Message us with your username and what happened, and we will sort it out.</p>
+        </details>
+        <details>
+          <summary>Is this the official DonutSMP store?</summary>
+          <p>No. This is an independent trading page and is not affiliated with DonutSMP, Mojang or Microsoft.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>DonutSMP Trades</span>
+    <span>Not affiliated with DonutSMP, Mojang or Microsoft. Payments handled by Whop.</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  // Edit these to change prices and where every button points.
+  var CONFIG = {
+    whopUrl: "https://whop.com/",
+    tiers: [ { from: 0, rate: 0.05 } ],
+    packs: [ { name: "Starter", m: 100 }, { name: "Stack", m: 500, best: true }, { name: "Vault", m: 1000 } ],
+    // Prices are in USD. Edit, add or remove items here.
+    items: [
+      { cat: "Gear", name: "Netherite armor set", desc: "Helmet, chestplate, leggings and boots.", price: 6.00 },
+      { cat: "Gear", name: "Netherite sword", desc: "One sword.", price: 1.50 },
+      { cat: "Gear", name: "Netherite pickaxe", desc: "One pickaxe.", price: 1.50 },
+      { cat: "Gear", name: "Elytra", desc: "One pair of wings.", price: 3.00 },
+      { cat: "Spawners", name: "Skeleton spawner", desc: "One spawner block.", price: 3.00 },
+      { cat: "Spawners", name: "Zombie spawner", desc: "One spawner block.", price: 2.50 },
+      { cat: "Spawners", name: "Blaze spawner", desc: "One spawner block.", price: 4.00 },
+      { cat: "Spawners", name: "Iron golem spawner", desc: "One spawner block.", price: 5.00 },
+      { cat: "Materials", name: "Netherite ingots x16", desc: "Sixteen ingots.", price: 5.00 },
+      { cat: "Materials", name: "Diamonds x64", desc: "One full stack.", price: 2.00 },
+      { cat: "Materials", name: "Emeralds x64", desc: "One full stack.", price: 2.50 },
+      { cat: "Materials", name: "Obsidian x64", desc: "One full stack.", price: 1.00 },
+      { cat: "Utility", name: "Totems of Undying x4", desc: "Four totems.", price: 2.00 },
+      { cat: "Utility", name: "Enchanted golden apples x16", desc: "Sixteen apples.", price: 3.00 },
+      { cat: "Utility", name: "Ender pearls x16", desc: "One full stack.", price: 1.00 },
+      { cat: "Utility", name: "Shulker box", desc: "One empty box.", price: 1.50 }
+    ]
+  };
+
+  function rateFor(m) {
+    var r = CONFIG.tiers[0].rate;
+    CONFIG.tiers.forEach(function (t) { if (m >= t.from) r = t.rate; });
+    return r;
+  }
+  function nextTier(m) {
+    for (var i = 0; i < CONFIG.tiers.length; i++) { if (CONFIG.tiers[i].from > m) return CONFIG.tiers[i]; }
+    return null;
+  }
+  function fmtAmount(m) { return m >= 1000 ? (m / 1000) + "B" : m + "M"; }
+  function fmtPrice(n) { return "$" + n.toFixed(2); }
+
+  document.querySelectorAll("[data-whop]").forEach(function (a) { a.href = CONFIG.whopUrl; });
+
+  // Sprinkles on the donut, placed with a fixed pattern so it looks the same every load.
+  var colors = ["var(--mint)", "var(--dough)", "var(--fg)", "var(--surface)"];
+  var g = document.getElementById("sprinkles");
+  var NS = "http://www.w3.org/2000/svg";
+  for (var i = 0; i < 26; i++) {
+    var ang = (i * 137.5) * Math.PI / 180;
+    var rad = 58 + ((i * 7) % 5) * 3.2;
+    var x = 100 + Math.cos(ang) * rad, y = 100 + Math.sin(ang) * rad;
+    var tilt = ((i * 53) % 180) * Math.PI / 180;
+    var l = document.createElementNS(NS, "line");
+    l.setAttribute("x1", (x - Math.cos(tilt) * 4).toFixed(1));
+    l.setAttribute("y1", (y - Math.sin(tilt) * 4).toFixed(1));
+    l.setAttribute("x2", (x + Math.cos(tilt) * 4).toFixed(1));
+    l.setAttribute("y2", (y + Math.sin(tilt) * 4).toFixed(1));
+    l.setAttribute("stroke", colors[i % colors.length]);
+    g.appendChild(l);
+  }
+
+  // Packs
+  var grid = document.getElementById("packGrid");
+  CONFIG.packs.forEach(function (p) {
+    var r = rateFor(p.m);
+    var el = document.createElement("div");
+    el.className = "pack" + (p.best ? " best" : "");
+    el.innerHTML =
+      '<span class="name">' + p.name + (p.best ? " · most popular" : "") + '</span>' +
+      '<span class="qty">' + fmtAmount(p.m) + '</span>' +
+      '<span class="cost">' + fmtPrice(p.m * r) + '</span>' +
+      '<span class="per">' + fmtPrice(r) + ' per 1M</span>' +
+      '<a class="btn btn-primary" target="_blank" rel="noopener" href="' + CONFIG.whopUrl + '">Buy ' + p.name + '</a>';
+    grid.appendChild(el);
+  });
+
+  // Item shop
+  var cats = ["All", "Gear", "Spawners", "Materials", "Utility"];
+  var chipRow = document.getElementById("chips");
+  var itemGrid = document.getElementById("itemGrid");
+  var activeCat = "All";
+
+  function renderItems() {
+    itemGrid.innerHTML = "";
+    CONFIG.items.forEach(function (it) {
+      if (activeCat !== "All" && it.cat !== activeCat) return;
+      var el = document.createElement("div");
+      el.className = "item";
+      el.innerHTML =
+        '<span class="tag">' + it.cat + '</span>' +
+        '<span class="iname">' + it.name + '</span>' +
+        '<span class="idesc">' + it.desc + '</span>' +
+        '<span class="iprice">' + fmtPrice(it.price) + '</span>' +
+        '<a class="btn btn-ghost btn-small" target="_blank" rel="noopener" href="' + CONFIG.whopUrl + '">Buy on Whop</a>';
+      itemGrid.appendChild(el);
+    });
+  }
+  cats.forEach(function (c) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.id = "chip-" + c.toLowerCase();
+    b.className = "chip";
+    b.textContent = c;
+    b.setAttribute("aria-pressed", c === activeCat ? "true" : "false");
+    b.addEventListener("click", function () {
+      activeCat = c;
+      chipRow.querySelectorAll(".chip").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      renderItems();
+    });
+    chipRow.appendChild(b);
+  });
+  renderItems();
+
+  // Calculator
+  var slider = document.getElementById("slider");
+  var amountEl = document.getElementById("amount");
+  var priceEl = document.getElementById("price");
+  var rateEl = document.getElementById("rate");
+  var ign = document.getElementById("ign");
+  var summary = document.getElementById("summary");
+  var copyBtn = document.getElementById("copy");
+
+  function update() {
+    var m = Number(slider.value);
+    var r = rateFor(m);
+    var pct = ((m - slider.min) / (slider.max - slider.min)) * 100;
+    slider.style.setProperty("--p", pct + "%");
+    amountEl.textContent = fmtAmount(m);
+    priceEl.textContent = fmtPrice(m * r);
+    var nt = nextTier(m), txt = fmtPrice(r) + " per 1M.";
+    if (nt) txt += " Drops to " + fmtPrice(nt.rate) + " at " + fmtAmount(nt.from) + ".";
+    else txt += " Same rate at any amount.";
+    rateEl.textContent = txt;
+    var name = ign.value.trim() || "YourUsername";
+    summary.textContent = "Order: " + fmtAmount(m) + " DonutSMP money for " + name + " (" + fmtPrice(m * r) + ")";
+  }
+  slider.addEventListener("input", update);
+  ign.addEventListener("input", update);
+
+  copyBtn.addEventListener("click", function () {
+    var text = summary.textContent;
+    function flash(msg) { copyBtn.textContent = msg; setTimeout(function () { copyBtn.textContent = "Copy note"; }, 1600); }
+    function fallback() {
+      try {
+        var range = document.createRange();
+        range.selectNodeContents(summary);
+        var sel = window.getSelection();
+        sel.removeAllRanges(); sel.addRange(range);
+        flash("Selected");
+      } catch (e) { flash("Select it"); }
+    }
+    try {
+      navigator.clipboard.writeText(text).then(function () { flash("Copied"); }, fallback);
+    } catch (e) { fallback(); }
+  });
+
+  update();
+})();
+</script>
+
+</body>
+</html>
