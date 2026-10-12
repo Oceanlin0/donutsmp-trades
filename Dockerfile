@@ -1,4 +1,5 @@
-FROM nginx:alpine
-ENV PORT=8080
-COPY default.conf.template /etc/nginx/templates/default.conf.template
-COPY index.html /usr/share/nginx/html/index.html
+FROM node:20-alpine
+WORKDIR /app
+COPY server.js index.html ./
+ENV NODE_ENV=production
+CMD ["node", "server.js"]

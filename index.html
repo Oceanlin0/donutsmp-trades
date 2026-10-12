@@ -134,6 +134,10 @@ input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border-radius
 .note { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; background: var(--bg); border: 2px dashed var(--line); border-radius: 14px; padding: 12px 14px; }
 .note p { font-family: var(--font-mono); font-size: 0.85rem; overflow-wrap: anywhere; min-width: 0; flex: 1 1 200px; }
 
+.err { color: var(--accent); font-weight: 700; font-size: 0.9rem; }
+dialog { border: 2px solid var(--line); border-radius: 24px; background: var(--surface); color: var(--fg); padding: 24px; width: min(420px, calc(100% - 32px)); }
+dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+
 /* Sections */
 section { padding-block: 48px; }
 .section-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px; max-width: 60ch; }
@@ -206,7 +210,7 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
       </svg>
       DonutSMP Trades
     </a>
-    <a class="btn btn-primary btn-small" data-whop href="https://whop.com/checkout/plan_ziJ3lUE8vkMhC" target="_blank" rel="noopener">Buy on Whop</a>
+    <a class="btn btn-primary btn-small" href="#calc">Buy money</a>
   </header>
 
   <main id="top">
@@ -216,7 +220,7 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
         <h1>Skip the grind. <em>Buy money</em> and gear for DonutSMP.</h1>
         <p class="lede">Pick an amount, pay at Whop checkout, then meet us in-game to pick it up.</p>
         <div class="cta-row">
-          <a class="btn btn-primary" data-whop href="https://whop.com/checkout/plan_ziJ3lUE8vkMhC" target="_blank" rel="noopener">Buy on Whop</a>
+          <a class="btn btn-primary" href="#calc">Buy money</a>
           <a class="btn btn-ghost" href="#packs">See packs</a>
         </div>
         <div class="donut" aria-hidden="true">
@@ -237,8 +241,8 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
           <div class="price" id="price">$5.00</div>
         </div>
         <div>
-          <input type="range" id="slider" aria-label="Amount of in-game money in millions" min="10" max="1000" step="10" value="100">
-          <div class="scale"><span>10M</span><span>500M</span><span>1B</span></div>
+          <input type="range" id="slider" aria-label="Amount of in-game money in millions" min="20" max="1000" step="1" value="100">
+          <div class="scale"><span>20M</span><span>500M</span><span>1B</span></div>
         </div>
         <p class="hint" id="rate"></p>
         <div class="field">
@@ -249,14 +253,15 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
           <p id="summary"></p>
           <button class="btn btn-ghost btn-small" id="copy" type="button">Copy note</button>
         </div>
-        <a class="btn btn-primary" data-whop href="https://whop.com/checkout/plan_ziJ3lUE8vkMhC" target="_blank" rel="noopener">Checkout on Whop</a>
+        <button class="btn btn-primary" id="checkout" type="button">Checkout</button>
+        <p class="err" id="err" role="alert" hidden></p>
       </div>
     </div>
 
     <section id="packs">
       <div class="section-head">
         <p class="eyebrow">Money packs</p>
-        <h2>One flat rate: $0.05 per 1M.</h2>
+        <h2>$0.05 per 1M. Minimum order $1.00.</h2>
         <p>Every pack is delivered in-game after you pay.</p>
       </div>
       <div class="packs" id="packGrid"></div>
@@ -273,9 +278,8 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
       <div class="gear">
         <div>
           <h3>Don't see it?</h3>
-          <p>Tell us what you need and we will give you a price for it.</p>
+          <p>Message us with what you need and we will quote it before you pay.</p>
         </div>
-        <a class="btn btn-ghost" data-whop href="https://whop.com/checkout/plan_ziJ3lUE8vkMhC" target="_blank" rel="noopener">Ask on Whop</a>
       </div>
     </section>
 
@@ -324,11 +328,27 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
   </footer>
 </div>
 
+<dialog id="orderDialog">
+  <form id="orderForm" method="dialog" style="display:flex;flex-direction:column;gap:14px">
+    <h3 id="orderTitle" style="font-family:var(--font-display);font-weight:400;font-size:1.5rem"></h3>
+    <p class="hint" id="orderSub"></p>
+    <div class="field">
+      <label for="orderIgn">Your Minecraft username</label>
+      <input type="text" id="orderIgn" placeholder="YourUsername" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="16">
+    </div>
+    <p class="err" id="orderErr" role="alert" hidden></p>
+    <div class="cta-row" style="margin-top:0">
+      <button class="btn btn-primary" id="orderGo" type="button">Continue to payment</button>
+      <button class="btn btn-ghost" id="orderCancel" type="button">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
 (function () {
   // Edit these to change prices and where every button points.
   var CONFIG = {
-    whopUrl: "https://whop.com/checkout/plan_ziJ3lUE8vkMhC",
+    apiBase: "",  // empty when this page is served by the checkout server
     tiers: [ { from: 0, rate: 0.05 } ],
     packs: [ { name: "Starter", m: 100 }, { name: "Stack", m: 500, best: true }, { name: "Vault", m: 1000 } ],
     // Prices are in USD. Edit, add or remove items here.
@@ -364,7 +384,6 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
   function fmtAmount(m) { return m >= 1000 ? (m / 1000) + "B" : m + "M"; }
   function fmtPrice(n) { return "$" + n.toFixed(2); }
 
-  document.querySelectorAll("[data-whop]").forEach(function (a) { a.href = CONFIG.whopUrl; });
 
   // Sprinkles on the donut, placed with a fixed pattern so it looks the same every load.
   var colors = ["var(--mint)", "var(--dough)", "var(--fg)", "var(--surface)"];
@@ -395,7 +414,7 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
       '<span class="qty">' + fmtAmount(p.m) + '</span>' +
       '<span class="cost">' + fmtPrice(p.m * r) + '</span>' +
       '<span class="per">' + fmtPrice(r) + ' per 1M</span>' +
-      '<a class="btn btn-primary" target="_blank" rel="noopener" href="' + CONFIG.whopUrl + '">Buy ' + p.name + '</a>';
+      '<button type="button" class="btn btn-primary" data-pack="' + p.m + '">Buy ' + p.name + '</button>';
     grid.appendChild(el);
   });
 
@@ -407,7 +426,7 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
 
   function renderItems() {
     itemGrid.innerHTML = "";
-    CONFIG.items.forEach(function (it) {
+    CONFIG.items.forEach(function (it, idx) {
       if (activeCat !== "All" && it.cat !== activeCat) return;
       var el = document.createElement("div");
       el.className = "item";
@@ -416,7 +435,7 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
         '<span class="iname">' + it.name + '</span>' +
         '<span class="idesc">' + it.desc + '</span>' +
         '<span class="iprice">' + fmtPrice(it.price) + '</span>' +
-        '<a class="btn btn-ghost btn-small" target="_blank" rel="noopener" href="' + CONFIG.whopUrl + '">Buy on Whop</a>';
+        '<button type="button" class="btn btn-ghost btn-small" data-item="' + idx + '">Buy</button>';
       itemGrid.appendChild(el);
     });
   }
@@ -477,6 +496,60 @@ footer { border-top: 2px solid var(--line); padding-block: 28px 40px; color: var
     try {
       navigator.clipboard.writeText(text).then(function () { flash("Copied"); }, fallback);
     } catch (e) { fallback(); }
+  });
+
+  // Checkout: the server creates a Whop checkout for the exact total.
+  var errEl = document.getElementById("err");
+  var checkoutBtn = document.getElementById("checkout");
+  var dlg = document.getElementById("orderDialog");
+  var dIgn = document.getElementById("orderIgn");
+  var dErr = document.getElementById("orderErr");
+  var dGo = document.getElementById("orderGo");
+  var pending = null;
+
+  function startCheckout(payload, btn, showErr) {
+    showErr("");
+    var label = btn.textContent;
+    btn.disabled = true; btn.textContent = "Opening checkout...";
+    fetch(CONFIG.apiBase + "/api/checkout", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+    }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) {
+        if (x.ok && x.j.url) { window.location.assign(x.j.url); return; }
+        showErr(x.j.error || "Could not start checkout.");
+        btn.disabled = false; btn.textContent = label;
+      })
+      .catch(function () { showErr("Could not reach the checkout. Check your connection and try again."); btn.disabled = false; btn.textContent = label; });
+  }
+  function showCalcErr(t) { errEl.textContent = t; errEl.hidden = !t; }
+  function showDlgErr(t) { dErr.textContent = t; dErr.hidden = !t; }
+
+  checkoutBtn.addEventListener("click", function () {
+    startCheckout({ type: "money", millions: Number(slider.value), ign: ign.value.trim() }, checkoutBtn, showCalcErr);
+  });
+  function openDialog(title, sub, payload) {
+    pending = payload;
+    document.getElementById("orderTitle").textContent = title;
+    document.getElementById("orderSub").textContent = sub;
+    showDlgErr(""); dIgn.value = ign.value;
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+    dIgn.focus();
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-pack],[data-item]");
+    if (!b) return;
+    if (b.hasAttribute("data-pack")) {
+      var m = Number(b.getAttribute("data-pack"));
+      openDialog(fmtAmount(m) + " money", fmtPrice(m * rateFor(m)) + " total", { type: "money", millions: m });
+    } else {
+      var it = CONFIG.items[Number(b.getAttribute("data-item"))];
+      openDialog(it.name, fmtPrice(it.price) + " total", { type: "item", name: it.name });
+    }
+  });
+  document.getElementById("orderCancel").addEventListener("click", function () { dlg.close ? dlg.close() : dlg.removeAttribute("open"); });
+  dGo.addEventListener("click", function () {
+    var payload = Object.assign({}, pending, { ign: dIgn.value.trim() });
+    startCheckout(payload, dGo, showDlgErr);
   });
 
   update();
